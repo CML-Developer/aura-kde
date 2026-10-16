@@ -9,7 +9,7 @@
 
 **Adaptador KDE para [Aura](https://antwny.github.io/aura/) — Wallpaper Engine**
 
-Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **1, 2, 3 o más monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
+Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **1, 2 o 3 monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
 
 > **Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), licenciada bajo GPL-3.0.**
 > No está afiliado ni respaldado por Valve, Steam ni Wallpaper Engine.
@@ -235,7 +235,7 @@ python3 -m unittest discover -s tests -v
 
 Este proyecto modifica [Aura v1.6.1](https://github.com/antwny/aura) (commit c41ac5e) para agregar soporte KDE Plasma 6.
 
-**Fecha de las modificaciones:** Octubre 2024
+**Fecha de las modificaciones:** Octubre 2026
 
 **Cambios principales:**
 - Motor mpvpaper excluido, reemplazado por bridge Python → catsout plugin
@@ -244,7 +244,7 @@ Este proyecto modifica [Aura v1.6.1](https://github.com/antwny/aura) (commit c41
 - Integración con backends org.kde.image y catsout
 - Catálogo Workshop + Store con filtrado Guardian opcional
 
-**Archivos modificados:**
+**Archivos añadidos o modificados:**
 - `src/engine/kde.rs` — stub + bridge caller
 - `src/kde_cli.rs` — CLI entry point
 - Ver `patches/aura-kde.patch` para diff completo
@@ -549,7 +549,7 @@ git log --oneline -1
 
 This project modifies [Aura v1.6.1](https://github.com/antwny/aura) (commit c41ac5e) to add KDE Plasma 6 support.
 
-**Modification date:** October 2024
+**Modification date:** October 2026
 
 **Main changes:**
 - mpvpaper engine excluded, replaced by Python bridge → catsout plugin
@@ -558,7 +558,7 @@ This project modifies [Aura v1.6.1](https://github.com/antwny/aura) (commit c41a
 - Integration with org.kde.image and catsout backends
 - Workshop + Store catalog with optional Guardian filtering
 
-**Modified files:**
+**Added or modified files:**
 - `src/engine/kde.rs` — stub + bridge caller
 - `src/kde_cli.rs` — CLI entry point
 - See `patches/aura-kde.patch` for complete diff
