@@ -7,9 +7,9 @@
 <a name="español"></a>
 ## Español
 
-**Adaptador KDE para [Aura](https://antwny.github.io/aura/) — Wallpaper Engine en todas las pantallas.**
+**Adaptador KDE para [Aura](https://antwny.github.io/aura/) — Wallpaper Engine**
 
-Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **1, 2 o 3 monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
+Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **1, 2 o más monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
 
 > **Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), licenciada bajo GPL-3.0.**
 > No está afiliado ni respaldado por Valve, Steam ni Wallpaper Engine.
