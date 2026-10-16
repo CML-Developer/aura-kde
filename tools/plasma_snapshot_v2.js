@@ -13,7 +13,10 @@
                 target.groups[plugin] = {};
                 specs[plugin].forEach(function (key) {
                     var present = d.configKeys.indexOf(key) !== -1;
-                    target.groups[plugin][key] = {present: present, value: present ? d.readConfig(key) : null};
+                    var value = present ? d.readConfig(key) : null;
+                    // Normalize: '' after writeConfig(key,'') is semantically absent in KConfig.
+                    if (present && value === '') { present = false; value = null; }
+                    target.groups[plugin][key] = {present: present, value: value};
                 });
             });
         } finally { d.currentConfigGroup = group; }

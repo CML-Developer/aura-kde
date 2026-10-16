@@ -5,7 +5,10 @@
     function read(d, plugin, key) {
         d.currentConfigGroup = ['Wallpaper', plugin, 'General'];
         var present = d.configKeys.indexOf(key) !== -1;
-        return {present: present, value: present ? d.readConfig(key) : null};
+        var value = present ? d.readConfig(key) : null;
+        // writeConfig(key,'') leaves the key present with '' in configKeys; normalize to absent.
+        if (present && value === '') { present = false; value = null; }
+        return {present: present, value: value};
     }
     function write(d, plugin, key, value) {
         d.currentConfigGroup = ['Wallpaper', plugin, 'General'];

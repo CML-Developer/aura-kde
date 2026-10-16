@@ -48,7 +48,11 @@ def package(prefix, binary_path):
         files['lib/aura-kde-lab/tools/' + name] = ((ROOT / 'tools' / name).read_bytes(), 0o644)
     icon_path = ROOT / 'assets' / 'io.github.antwny.aura.svg'
     if icon_path.exists():
-        files['share/icons/hicolor/scalable/apps/io.github.antwny.aura.svg'] = (icon_path.read_bytes(), 0o644)
+        icon_data = icon_path.read_bytes()
+        # Install under both names: the upstream icon name and the KDE build app_id.
+        # KDE Wayland uses the app_id ("local.aura.kde.lab") for taskbar icon lookup.
+        files['share/icons/hicolor/scalable/apps/io.github.antwny.aura.svg'] = (icon_data, 0o644)
+        files['share/icons/hicolor/scalable/apps/local.aura.kde.lab.svg'] = (icon_data, 0o644)
     launcher = '''#!/usr/bin/env python3
 import os
 from pathlib import Path
@@ -69,7 +73,8 @@ Type=Application
 Name=Aura KDE Lab
 Comment=Workshop wallpapers on both screens
 Exec="{command}"
-Icon=io.github.antwny.aura
+Icon=local.aura.kde.lab
+StartupWMClass=local.aura.kde.lab
 Terminal=false
 Categories=Utility;
 '''
@@ -79,7 +84,7 @@ Type=Application
 Name=Restaurar estilos Aura
 Comment=Restore your saved default KDE accent color
 Exec="{command}" theme-restore
-Icon=io.github.antwny.aura
+Icon=local.aura.kde.lab
 Terminal=false
 Categories=Utility;
 NoDisplay=false
