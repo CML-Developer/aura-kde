@@ -37,10 +37,8 @@ def _write_accent(accent_csv):
                  '--key', 'accentColor', accent_csv],
                 capture_output=True, check=True, timeout=5
             )
-        subprocess.run(
-            ['qdbus6', 'org.kde.KWin', '/KWin', 'reconfigure'],
-            capture_output=True, timeout=5
-        )
+        # kwriteconfig6 triggers KConfig file watchers automatically;
+        # no aggressive D-Bus shell reload needed (refreshCurrentShell causes blackouts).
     except Exception:
         pass
 
