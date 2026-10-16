@@ -103,6 +103,19 @@ aura-kde-lab
 
 O busca **Aura KDE Lab** en el lanzador de aplicaciones.
 
+#### Configurar atajo de teclado
+
+Para abrir el selector de wallpapers con un atajo de teclado:
+
+1. Abre **Preferencias del sistema → Atajos de teclado → Atajos personalizados**
+2. Haz clic en **Editar → Nueva → Comando global de acceso directo**
+3. Dale un nombre (ej. "Abrir Aura")
+4. En la pestaña **Disparador**, configura tu atajo (ej. `Meta+W`)
+5. En la pestaña **Acción**, escribe: `aura-kde-lab`
+6. Haz clic en **Aplicar**
+
+Ahora puedes abrir Aura con tu atajo personalizado.
+
 ---
 
 ### Auto-theming — Colores desde el fondo
@@ -324,6 +337,19 @@ aura-kde-lab
 ```
 
 Or launch **Aura KDE Lab** from your application menu.
+
+#### Configure keyboard shortcut
+
+To open the wallpaper selector with a keyboard shortcut:
+
+1. Open **System Settings → Keyboard → Shortcuts → Custom Shortcuts**
+2. Click **Edit → New → Global Shortcut → Command/URL**
+3. Give it a name (e.g., "Open Aura")
+4. In the **Trigger** tab, set your shortcut (e.g., `Meta+W`)
+5. In the **Action** tab, enter: `aura-kde-lab`
+6. Click **Apply**
+
+Now you can open Aura with your custom shortcut.
 
 ---
 
