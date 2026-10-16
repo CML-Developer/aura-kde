@@ -231,11 +231,33 @@ python3 -m unittest discover -s tests -v
 
 ---
 
+### Modificaciones respecto a Aura
+
+Este proyecto modifica [Aura v1.6.1](https://github.com/antwny/aura) (commit c41ac5e) para agregar soporte KDE Plasma 6.
+
+**Fecha de las modificaciones:** Octubre 2024
+
+**Cambios principales:**
+- Motor mpvpaper excluido, reemplazado por bridge Python → catsout plugin
+- Soporte multi-monitor (1-3 pantallas) con transacciones atómicas
+- Auto-theming (extracción de paleta + aplicación de accent color KDE)
+- Integración con backends org.kde.image y catsout
+- Catálogo Workshop + Store con filtrado Guardian opcional
+
+**Archivos modificados:**
+- `src/engine/kde.rs` — stub + bridge caller
+- `src/kde_cli.rs` — CLI entry point
+- Ver `patches/aura-kde.patch` para diff completo
+
+---
+
 ### Licencia
 
 Los archivos en `tools/`, `tests/` y `scripts/` son trabajo original de este adaptador.
 Los archivos en `src/`, `patches/` y `assets/` modifican o derivan de [Aura](https://github.com/antwny/aura), que está bajo [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 Estas modificaciones son también **GPL-3.0**.
+
+Ver archivo `LICENSE` para el texto completo de la licencia.
 
 > Aura está desarrollado por [antwny](https://github.com/antwny) y colaboradores.
 > Este adaptador es un proyecto comunitario independiente y no está afiliado con los autores de Aura.
@@ -523,11 +545,33 @@ git log --oneline -1
 
 ---
 
+### Modifications from Aura
+
+This project modifies [Aura v1.6.1](https://github.com/antwny/aura) (commit c41ac5e) to add KDE Plasma 6 support.
+
+**Modification date:** October 2024
+
+**Main changes:**
+- mpvpaper engine excluded, replaced by Python bridge → catsout plugin
+- Multi-monitor support (1-3 screens) with atomic transactions
+- Auto-theming (palette extraction + KDE accent color application)
+- Integration with org.kde.image and catsout backends
+- Workshop + Store catalog with optional Guardian filtering
+
+**Modified files:**
+- `src/engine/kde.rs` — stub + bridge caller
+- `src/kde_cli.rs` — CLI entry point
+- See `patches/aura-kde.patch` for complete diff
+
+---
+
 ### License
 
 The files in `tools/`, `tests/` and `scripts/` are original work for this adapter.
 The files in `src/`, `patches/` and `assets/` modify or derive from [Aura](https://github.com/antwny/aura), which is [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 These modifications are therefore also **GPL-3.0**.
+
+See `LICENSE` file for the complete license text.
 
 > Aura is developed by [antwny](https://github.com/antwny) and contributors.
 > This adapter is an independent community project and is not affiliated with Aura's authors.
