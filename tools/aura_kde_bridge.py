@@ -8,6 +8,7 @@ import sys
 from aura_kde_catalog import catalog, child_path
 from aura_kde_apply import prepare, prepare_video, run
 import aura_kde_store as store
+import aura_kde_theme as theme
 
 
 def libraries():
@@ -50,6 +51,15 @@ def items():
     return output + store.items()
 
 
+def _auto_theme_enabled():
+    """Return True if auto_theme is enabled in Aura's config."""
+    config_path = Path.home() / '.config/aura-kde-lab/config.json'
+    try:
+        return json.loads(config_path.read_text()).get('auto_theme', False)
+    except Exception:
+        return False
+
+
 def main():
     if sys.argv[1:] == ['catalog']:
         print(json.dumps(items(), ensure_ascii=False))
@@ -62,10 +72,22 @@ def main():
         path = prepare_v2(item)
         print(json.dumps({'record': str(path)}), flush=True)
         run(path, False)
+        if _auto_theme_enabled():
+            theme.ensure_defaults_snapshotted()
+            preview = item.get('preview')
+            theme.apply_from_wallpaper(preview)
     elif len(sys.argv) == 3 and sys.argv[1] == 'restore':
         run(Path(sys.argv[2]), True)
+    elif sys.argv[1:] == ['theme-snapshot']:
+        saved = theme.snapshot_defaults()
+        print(json.dumps({'snapshotted': True, 'accent': saved.get('accent')}))
+    elif sys.argv[1:] == ['theme-restore']:
+        ok = theme.restore_defaults()
+        if not ok:
+            raise ValueError('No saved theme defaults. Enable auto-theming and change a wallpaper first, or run: aura-kde-lab theme-snapshot')
+        print(json.dumps({'restored': True}))
     else:
-        raise ValueError('Expected catalog, select PROJECT_JSON or restore RECORD')
+        raise ValueError('Expected catalog, select PROJECT_JSON, restore RECORD, theme-snapshot or theme-restore')
 
 
 if __name__ == '__main__':

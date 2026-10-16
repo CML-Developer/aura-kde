@@ -41,7 +41,7 @@ def package(prefix, binary_path):
     tool_names = [
         'aura_kde_v2.py', 'plasma_snapshot_v2.js', 'plasma_transaction_v2.js',
         'aura_kde_store.py', 'aura_kde_bridge.py', 'aura_kde_apply.py',
-        'aura_kde_catalog.py', 'aura_kde_snapshot.py',
+        'aura_kde_catalog.py', 'aura_kde_snapshot.py', 'aura_kde_theme.py',
         'plasma_snapshot.js', 'plasma_transaction.js',
     ]
     for name in tool_names:
@@ -52,9 +52,14 @@ def package(prefix, binary_path):
     launcher = '''#!/usr/bin/env python3
 import os
 from pathlib import Path
+import subprocess
 import sys
 base = Path(__file__).resolve().parents[1] / 'lib/aura-kde-lab'
 os.environ['AURA_KDE_BRIDGE'] = str(base / 'tools/aura_kde_bridge.py')
+# theme-* commands go directly to the bridge (not handled by the Rust binary)
+if len(sys.argv) > 1 and sys.argv[1].startswith('theme-'):
+    r = subprocess.run([sys.executable, str(base / 'tools/aura_kde_bridge.py'), *sys.argv[1:]])
+    sys.exit(r.returncode)
 os.execv(str(base / 'aura'), [str(base / 'aura'), *sys.argv[1:]])
 '''
     files['bin/aura-kde-lab'] = (launcher.encode(), 0o755)
@@ -69,6 +74,17 @@ Terminal=false
 Categories=Utility;
 '''
     files['share/applications/aura-kde-lab.desktop'] = (desktop.encode(), 0o644)
+    restore_desktop = f'''[Desktop Entry]
+Type=Application
+Name=Restaurar estilos Aura
+Comment=Restore your saved default KDE accent color
+Exec="{command}" theme-restore
+Icon=io.github.antwny.aura
+Terminal=false
+Categories=Utility;
+NoDisplay=false
+'''
+    files['share/applications/aura-kde-theme-restore.desktop'] = (restore_desktop.encode(), 0o644)
     return files
 
 
