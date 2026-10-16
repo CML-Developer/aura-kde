@@ -242,7 +242,7 @@ Estas modificaciones son también **GPL-3.0**.
 <a name="english"></a>
 ## English
 
-**KDE Plasma adapter for [Aura](https://antwny.github.io/aura/) — Wallpaper Engine on all screens.**
+**KDE Plasma adapter for [Aura](https://antwny.github.io/aura/) — Wallpaper Engine**
 
 This is an Arch Linux–focused modification of [Aura](https://github.com/antwny/aura) by [antwny](https://github.com/antwny) that adds KDE Plasma 6 + Wallpaper Engine support: applies Workshop wallpapers to **1, 2 or 3 monitors simultaneously** with automatic plugin switching between the Wallpaper Engine backend ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) and the native image backend.
 
