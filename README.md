@@ -51,7 +51,7 @@ Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de 
 #### 1. Clonar este repositorio
 
 ```bash
-git clone https://github.com/TU_USUARIO/aura-kde.git
+git clone https://github.com/CML-Developer/aura-kde.git
 ```
 
 #### 2. Clonar Aura y aplicar el parche
@@ -273,7 +273,7 @@ This is an Arch Linux–focused modification of [Aura](https://github.com/antwny
 #### 1. Clone this repo
 
 ```bash
-git clone https://github.com/YOUR_USER/aura-kde.git
+git clone https://github.com/CML-Developer/aura-kde.git
 ```
 
 #### 2. Clone Aura and apply the patch
