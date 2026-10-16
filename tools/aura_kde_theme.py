@@ -8,37 +8,69 @@ STATE_DIR = Path.home() / '.local/state/aura-kde-lab'
 DEFAULTS_FILE = STATE_DIR / 'theme_defaults.json'
 
 
+def _rgb_to_hex(r, g, b):
+    return f'#{r:02X}{g:02X}{b:02X}'
+
+
+def _scheme_default_accent():
+    """Read the DecorationFocus color from the active color scheme file.
+    This is the scheme's built-in accent — used when no custom accent override is set."""
+    try:
+        scheme = subprocess.run(
+            ['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'ColorScheme'],
+            capture_output=True, text=True, timeout=5
+        ).stdout.strip() or 'BreezeDark'
+        for d in (Path.home() / '.local/share/color-schemes',
+                  Path('/usr/share/color-schemes'),
+                  Path('/usr/local/share/color-schemes')):
+            f = d / f'{scheme}.colors'
+            if f.exists():
+                import configparser
+                cfg = configparser.RawConfigParser()
+                cfg.read(str(f))
+                val = cfg.get('Colors:Button', 'DecorationFocus', fallback=None)
+                if val:
+                    parts = val.split(',')
+                    if len(parts) == 3:
+                        return _rgb_to_hex(int(parts[0]), int(parts[1]), int(parts[2]))
+    except Exception:
+        pass
+    return None
+
+
 def _read_current_accent():
-    """Read current KDE accent color from kdeglobals; returns 'R,G,B' string or None."""
+    """Read current KDE accent color as '#RRGGBB' string.
+    Returns the custom override if set, otherwise the scheme's built-in default."""
     try:
         result = subprocess.run(
             ['kreadconfig6', '--file', 'kdeglobals', '--group', 'General', '--key', 'accentColor'],
             capture_output=True, text=True, timeout=5
         )
         val = result.stdout.strip()
-        return val if val else None
+        if val:
+            parts = val.split(',')
+            if len(parts) == 3:
+                return _rgb_to_hex(int(parts[0]), int(parts[1]), int(parts[2]))
+            if val.startswith('#'):
+                return val
     except Exception:
-        return None
+        pass
+    # No custom override — read from the scheme file so snapshot always has a real color
+    return _scheme_default_accent()
 
 
-def _write_accent(accent_csv):
-    """Write accent color e.g. '61,174,233' to kdeglobals and notify KDE.
-    Pass None to delete the key (revert to scheme default)."""
+def _write_accent(accent_hex):
+    """Apply accent color via plasma-apply-colorscheme --accent-color.
+    Pass None to resolve and apply the current scheme's built-in default."""
+    if accent_hex is None:
+        accent_hex = _scheme_default_accent()
+    if accent_hex is None:
+        return
     try:
-        if accent_csv is None:
-            subprocess.run(
-                ['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General',
-                 '--key', 'accentColor', '--delete'],
-                capture_output=True, timeout=5
-            )
-        else:
-            subprocess.run(
-                ['kwriteconfig6', '--file', 'kdeglobals', '--group', 'General',
-                 '--key', 'accentColor', accent_csv],
-                capture_output=True, check=True, timeout=5
-            )
-        # kwriteconfig6 triggers KConfig file watchers automatically;
-        # no aggressive D-Bus shell reload needed (refreshCurrentShell causes blackouts).
+        subprocess.run(
+            ['plasma-apply-colorscheme', '--accent-color', accent_hex],
+            capture_output=True, check=True, timeout=10
+        )
     except Exception:
         pass
 
@@ -109,14 +141,14 @@ def ensure_defaults_snapshotted():
 
 def apply_from_wallpaper(preview_path):
     """Extract palette from preview and apply as KDE accent color.
-    Returns the applied 'R,G,B' string, or None if nothing was applied."""
+    Returns the applied '#RRGGBB' hex string, or None if nothing was applied."""
     if not preview_path:
         return None
     palette = extract_palette(preview_path)
     if not palette:
         return None
     r, g, b, _ = palette
-    accent = f'{r},{g},{b}'
+    accent = _rgb_to_hex(r, g, b)
     _write_accent(accent)
     return accent
 

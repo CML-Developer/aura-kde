@@ -7,9 +7,9 @@
 <a name="español"></a>
 ## Español
 
-**Adaptador KDE para [Aura](https://antwny.github.io/aura/) — Wallpaper Engine en ambas pantallas.**
+**Adaptador KDE para [Aura](https://antwny.github.io/aura/) — Wallpaper Engine en todas las pantallas.**
 
-Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **dos monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
+Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), orientada a Arch Linux con soporte completo para KDE Plasma 6 + Wallpaper Engine: aplica fondos del Workshop en **1, 2 o 3 monitores simultáneamente** con cambio automático de plugin entre el backend de Wallpaper Engine ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) y el backend nativo de imágenes.
 
 > **Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de [antwny](https://github.com/antwny), licenciada bajo GPL-3.0.**
 > No está afiliado ni respaldado por Valve, Steam ni Wallpaper Engine.
@@ -22,13 +22,15 @@ Este proyecto es una modificación de [Aura](https://github.com/antwny/aura) de 
 | Función | Notas |
 |---|---|
 | Biblioteca Workshop en la UI de Aura | Lee las bibliotecas de Steam; respeta la lista negra de Guardian si está instalado |
-| Ambas pantallas actualizadas a la vez | Respaldo por pantalla; rollback completo si falla |
+| 1, 2 o 3 pantallas actualizadas a la vez | Respaldo por pantalla; rollback completo si falla |
 | Vídeos (Workshop, MotionBGS) | Activa **catsout** automáticamente |
 | Imágenes (Wallhaven, Bing, Minimalistas) | Activa **org.kde.image** automáticamente |
 | Restaurar fondo anterior | Un clic en la barra; restaura plugin + configuración |
-| **Auto-theming** | Extrae el color dominante del fondo y lo aplica como accent color de KDE |
-| **Restaurar mis estilos** | Guarda tus colores por defecto y los restaura con un clic |
+| **Auto-theming** | Toggle en ajustes; extrae el color dominante del fondo y lo aplica como accent color de KDE |
+| **Restaurar colores originales** | Botón en ajustes o comando; restaura el acento guardado antes del auto-tema |
 | Integración con Guardian (opcional) | Lee `~/.config/wallpaper-engine-safe/blacklist.txt` para ocultar fondos bloqueados |
+
+> **Nota:** Los fondos de Wallpaper Engine se descargan desde el [Workshop oficial de Steam](https://steamcommunity.com/app/431960/workshop/). Aura lee los fondos ya instalados en tus bibliotecas de Steam. Para agregar nuevos fondos, suscríbete a ellos en Steam Workshop y se sincronizarán automáticamente.
 
 ---
 
@@ -105,25 +107,29 @@ O busca **Aura KDE Lab** en el lanzador de aplicaciones.
 
 ### Auto-theming — Colores desde el fondo
 
-Cuando cambias el fondo con **Auto theme activado** en los ajustes de Aura, el adaptador extrae el color más vibrante del fondo y lo aplica como accent color de KDE Plasma (barra de tareas, decoraciones de ventanas, widgets).
+#### Activar / desactivar
 
-#### Guardar y restaurar tus estilos por defecto
+Ve a **Ajustes → "Acento de color · KDE Plasma"** dentro de Aura y activa el toggle **"Color de acento según el fondo"**. Desde ese momento, cada vez que cambies el fondo Aura extrae su color más vibrante y lo aplica como accent color de KDE Plasma (barra de tareas, decoraciones de ventanas, widgets).
 
-Antes de activar el auto-theming, puedes guardar tus colores actuales:
+Para desactivarlo, apaga el mismo toggle.
 
-```bash
-aura-kde-lab theme-snapshot
-```
+#### Restaurar colores originales
 
-Para restaurarlos en cualquier momento (manteniendo el fondo actual), busca **"Restaurar estilos Aura"** en el lanzador de aplicaciones, o ejecuta:
+El botón **"Restaurar colores originales"** (en la misma sección de ajustes) vuelve al acento guardado la primera vez que activaste el auto-tema. Equivale a buscar **"Restaurar estilos Aura"** en el lanzador de aplicaciones, o ejecutar:
 
 ```bash
 aura-kde-lab theme-restore
 ```
 
-Tus estilos guardados se almacenan en `~/.local/state/aura-kde-lab/theme_defaults.json`.
+Si quieres guardar manualmente un nuevo punto de referencia:
 
-> **Nota:** El auto-theming solo modifica el accent color de KDE. No toca la configuración de terminales (Ghostty, Konsole), temas de aplicaciones específicas ni ningún archivo fuera de `~/.config/kdeglobals`.
+```bash
+aura-kde-lab theme-snapshot
+```
+
+Los colores guardados se almacenan en `~/.local/state/aura-kde-lab/theme_defaults.json`.
+
+> **Nota:** El auto-theming solo modifica el accent color de KDE. No toca la configuración de terminales (Ghostty, Konsole), temas de aplicaciones específicas ni ningún archivo fuera de `kdeglobals`.
 
 ---
 
@@ -182,7 +188,7 @@ aura_kde_bridge.py
     └── aura_kde_v2.py        — prepara registro → ejecuta transacción
             ↓
         plasma_snapshot_v2.js   — lee estado actual de Plasma
-        plasma_transaction_v2.js — escribe ambas pantallas, verifica, rollback si falla
+        plasma_transaction_v2.js — escribe todas las pantallas (1–3), verifica, rollback si falla
 ```
 
 ---
@@ -200,11 +206,11 @@ python3 -m unittest discover -s tests -v
 
 ### Limitaciones
 
-- **Solo dos monitores:** la transacción valida exactamente dos escritorios activos.
+- **1 a 3 monitores:** la transacción soporta de 1 a 3 escritorios activos; con 4 o más fallará.
 - **Requiere sesión activa:** `evaluateScript` necesita una sesión Plasma en vivo.
 - **Confirmación de reproducción:** el adaptador verifica valores de configuración, no la reproducción real. Confirma visualmente.
 - **Fondos web** (tipo Workshop `web`): presentes en la biblioteca pero la reproducción no está probada.
-- **catsout requerido en ambas pantallas:** si una pantalla usa un plugin diferente al aplicar, la operación falla.
+- **catsout requerido en todas las pantallas:** si una pantalla usa un plugin diferente al aplicar, la operación falla.
 
 ---
 
@@ -223,9 +229,9 @@ Estas modificaciones son también **GPL-3.0**.
 <a name="english"></a>
 ## English
 
-**KDE Plasma adapter for [Aura](https://antwny.github.io/aura/) — Wallpaper Engine on both screens.**
+**KDE Plasma adapter for [Aura](https://antwny.github.io/aura/) — Wallpaper Engine on all screens.**
 
-This is an Arch Linux–focused modification of [Aura](https://github.com/antwny/aura) by [antwny](https://github.com/antwny) that adds KDE Plasma 6 + Wallpaper Engine support: applies Workshop wallpapers to **both monitors simultaneously** with automatic plugin switching between the Wallpaper Engine backend ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) and the native image backend.
+This is an Arch Linux–focused modification of [Aura](https://github.com/antwny/aura) by [antwny](https://github.com/antwny) that adds KDE Plasma 6 + Wallpaper Engine support: applies Workshop wallpapers to **1, 2 or 3 monitors simultaneously** with automatic plugin switching between the Wallpaper Engine backend ([catsout](https://github.com/catsout/wallpaper-engine-kde-plugin)) and the native image backend.
 
 > **This project is a modification of [Aura](https://github.com/antwny/aura) by [antwny](https://github.com/antwny), licensed under GPL-3.0.**
 > It is not affiliated with or endorsed by Valve, Steam, or Wallpaper Engine.
@@ -238,13 +244,15 @@ This is an Arch Linux–focused modification of [Aura](https://github.com/antwny
 | Feature | Notes |
 |---|---|
 | Workshop library in Aura's UI | Reads Steam libraries; respects Guardian blacklist if present |
-| Both screens updated at once | Per-screen backup; full rollback on failure |
+| 1, 2 or 3 screens updated at once | Per-screen backup; full rollback on failure |
 | Videos (Workshop, MotionBGS) | Activates **catsout** automatically |
 | Images (Wallhaven, Bing, Minimalistic) | Activates **org.kde.image** automatically |
 | Restore previous wallpaper | One click in the bar; restores plugin + config |
-| **Auto-theming** | Extracts the dominant color from the wallpaper and applies it as KDE accent color |
-| **Restore my styles** | Saves your default colors and restores them with one click |
+| **Auto-theming** | Settings toggle; extracts dominant color from wallpaper and applies it as KDE accent color |
+| **Restore original colors** | Settings button or command; reverts to the accent saved before auto-theme first ran |
 | Guardian integration (optional) | Reads `~/.config/wallpaper-engine-safe/blacklist.txt` to hide blocked wallpapers |
+
+> **Note:** Wallpaper Engine wallpapers are downloaded from the [official Steam Workshop](https://steamcommunity.com/app/431960/workshop/). Aura reads wallpapers already installed in your Steam libraries. To add new wallpapers, subscribe to them on Steam Workshop and they will sync automatically.
 
 ---
 
@@ -321,25 +329,29 @@ Or launch **Aura KDE Lab** from your application menu.
 
 ### Auto-theming — Colors from wallpaper
 
-When you change wallpaper with **Auto theme enabled** in Aura's settings, the adapter extracts the most vibrant color from the wallpaper preview and applies it as KDE Plasma's accent color (taskbar, window decorations, widgets).
+#### Enable / disable
 
-#### Saving and restoring your default styles
+Go to **Settings → "Accent color · KDE Plasma"** inside Aura and toggle **"Accent color from wallpaper"**. From that point on, every wallpaper change will extract the most vibrant color from the wallpaper and apply it as KDE Plasma's accent color (taskbar, window decorations, widgets).
 
-Before enabling auto-theming, you can save your current colors:
+To disable it, flip the same toggle off.
 
-```bash
-aura-kde-lab theme-snapshot
-```
+#### Restoring original colors
 
-To restore them at any time (while keeping the current wallpaper), search for **"Restaurar estilos Aura"** in the application launcher, or run:
+The **"Restore original colors"** button (in the same settings section) reverts to the accent that was saved the first time auto-theme was activated. Equivalent to searching for **"Restaurar estilos Aura"** in the application launcher, or running:
 
 ```bash
 aura-kde-lab theme-restore
 ```
 
-Your saved styles are stored in `~/.local/state/aura-kde-lab/theme_defaults.json`.
+To manually save a new reference point:
 
-> **Note:** Auto-theming only modifies the KDE accent color. It does not touch terminal configurations (Ghostty, Konsole), application-specific themes, or any file outside `~/.config/kdeglobals`.
+```bash
+aura-kde-lab theme-snapshot
+```
+
+Saved colors are stored in `~/.local/state/aura-kde-lab/theme_defaults.json`.
+
+> **Note:** Auto-theming only modifies the KDE accent color. It does not touch terminal configurations (Ghostty, Konsole), application-specific themes, or any file outside `kdeglobals`.
 
 ---
 
@@ -398,7 +410,7 @@ aura_kde_bridge.py
     └── aura_kde_v2.py        — prepare record → run transaction
             ↓
         plasma_snapshot_v2.js   — read current state from Plasma
-        plasma_transaction_v2.js — write both screens, verify, rollback on failure
+        plasma_transaction_v2.js — write all screens (1–3), verify, rollback on failure
 ```
 
 ### Key design decisions
@@ -457,11 +469,11 @@ aura-kde/
 
 ### Limitations
 
-- **Two monitors only**: the transaction validates exactly two active desktops.
+- **1 to 3 monitors**: the transaction supports 1 to 3 active desktops; 4 or more will fail.
 - **Active session required**: `evaluateScript` needs a live Plasma session.
 - **Playback confirmation**: the adapter verifies config values, not actual playback.
 - **Web wallpapers** (Workshop type `web`): present in the library but playback is untested.
-- **catsout required on both screens**: if one screen uses a different plugin at apply time, the operation fails.
+- **catsout required on all screens**: if one screen uses a different plugin at apply time, the operation fails.
 
 ---
 

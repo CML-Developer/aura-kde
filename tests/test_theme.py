@@ -164,8 +164,8 @@ class TestApplyFromWallpaper(unittest.TestCase):
         with patch.object(theme, 'extract_palette', return_value=(61, 174, 233, True)):
             with patch.object(theme, '_write_accent') as mock_write:
                 result = theme.apply_from_wallpaper('/some/preview.jpg')
-        self.assertEqual(result, '61,174,233')
-        mock_write.assert_called_once_with('61,174,233')
+        self.assertEqual(result, '#3DAEE9')
+        mock_write.assert_called_once_with('#3DAEE9')
 
 
 if __name__ == '__main__':

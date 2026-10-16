@@ -18,7 +18,7 @@
     try {
         if (currentActivity() !== req.before.activity) throw Error('Activity changed');
         var desktops = desktopsForActivity(currentActivity()).filter(function(d) { return d.screen >= 0; });
-        if (desktops.length !== 2) throw Error('Screen count changed');
+        if (desktops.length < 1 || desktops.length > 3) throw Error('Screen count changed');
         req.before.targets.forEach(function(t, index) {
             var d = desktops.filter(function(d) { return d.id === t.containment; })[0];
             if (!d) throw Error('Desktop disappeared');

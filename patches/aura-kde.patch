@@ -182,8 +182,7 @@ index 436a9a6..903b034 100644
 +                | Message::ToggleMute(_) | Message::ChangeVolume(_) | Message::SelectScaling { .. }
 +                | Message::ToggleAutostart(_) | Message::ToggleAutoTheme(_) | Message::ToggleAutoDark(_)
 +                | Message::SelectThemeMode(_) | Message::ToggleSmartPause(_) | Message::ToggleAutoPause(_)
-+                | Message::TogglePauseOnBattery(_) | Message::ToggleRotation(_) | Message::StartFavoritesRotation
-+                | Message::DeleteWallpaper(_) | Message::DeleteDownloadedWallpaper(_)
++                | Message::TogglePauseOnBattery(_)
 +                | Message::PerformGuiUpdate { .. } => return self.notify("Esta función no está habilitada en Aura KDE."),
 +                Message::CheckForUpdates { .. } | Message::SmartPauseTick | Message::BatteryTick
 +                | Message::GameModeChanged(_) | Message::BatteryStateChanged(_) => return Task::none(),

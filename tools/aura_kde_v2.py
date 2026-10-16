@@ -19,8 +19,8 @@ def validate(state):
     if state.get('schema') != 2 or not isinstance(state.get('activity'), str) or not state['activity']:
         raise ValueError('Invalid v2 snapshot')
     targets = state.get('targets', [])
-    if len(targets) != 2:
-        raise ValueError('Expected exactly two active desktops')
+    if not (1 <= len(targets) <= 3):
+        raise ValueError('Expected 1–3 active desktops')
     seen_ids, seen_screens = set(), set()
     for t in targets:
         if t.get('plugin') not in SPECS:
@@ -164,21 +164,30 @@ def run(path, restore=False):
             if item.get('fingerprint') != record.get('fingerprint') or desired_state(before,item) != after:
                 raise ValueError('Wallpaper changed after backup')
             desired = after
-        stage = blank_state(desired)
+        # Only use blank phase if plugin changes (avoids black screen flash on same-plugin transitions)
+        needs_blank = any(t1['plugin'] != t2['plugin'] for t1, t2 in zip(current['targets'], desired['targets']))
         try:
-            transition(current, stage)
-            transition(stage, desired)
+            if needs_blank:
+                stage = blank_state(desired)
+                transition(current, stage)
+                transition(stage, desired)
+            else:
+                transition(current, desired)
         except Exception as error:
             # Only roll back recognized operation states; preserve any external change.
             try:
                 actual = snapshot()
                 if not known_state(actual, states):
                     raise ValueError('Rollback conflict: external change preserved')
-                recovery = blank_state(original)
-                transition(actual, recovery)
-                transition(recovery, original)
+                needs_blank_rollback = any(t1['plugin'] != t2['plugin'] for t1, t2 in zip(actual['targets'], original['targets']))
+                if needs_blank_rollback:
+                    recovery = blank_state(original)
+                    transition(actual, recovery)
+                    transition(recovery, original)
+                else:
+                    transition(actual, original)
             except Exception as rollback:
                 raise ValueError(f'{error}; recovery incomplete: {rollback}; record: {path}') from error
             raise ValueError(f'{error}; previous configuration restored; record: {path}') from error
-        print(json.dumps(dict(ok=True, restored=restore,record=str(path),verified_targets=2,
+        print(json.dumps(dict(ok=True, restored=restore,record=str(path),verified_targets=len(before['targets']),
                               verification='configuration-only; confirm playback visually')))
