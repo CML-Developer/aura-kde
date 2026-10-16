@@ -1,0 +1,539 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index cd0858d..c618eb7 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -32,3 +32,7 @@ lto = "thin"
+ codegen-units = 1
+ panic = "abort"
+ strip = true
++
++[features]
++default = []
++kde = []
+diff --git a/src/app.rs b/src/app.rs
+index 436a9a6..903b034 100644
+--- a/src/app.rs
++++ b/src/app.rs
+@@ -47,6 +47,10 @@ pub enum LibrarySort {
+ #[derive(Debug, Clone)]
+ #[allow(dead_code)]
+ pub enum Message {
++    #[cfg(feature = "kde")]
++    KdeApplied(PathBuf, Result<String, String>),
++    #[cfg(feature = "kde")]
++    KdeRestore,
+     SelectPage(nav_bar::Id),
+     SelectLibraryFilter(LibraryFilter),
+     LoadMoreLibraryWallpapers,
+@@ -252,6 +256,10 @@ impl cosmic::app::CosmicFlags for AuraFlags {
+ }
+ 
+ pub struct AuraApp {
++    #[cfg(feature = "kde")]
++    pub(crate) kde_busy: bool,
++    #[cfg(feature = "kde")]
++    pub(crate) kde_record: Option<PathBuf>,
+     pub(crate) core: Core,
+     pub(crate) nav: nav_bar::Model,
+     pub(crate) active_page: Page,
+@@ -374,6 +382,7 @@ impl AuraApp {
+     }
+ 
+     pub(crate) fn handle_topology_change(&mut self, current_outputs: Vec<MonitorOutput>) {
++        if cfg!(feature = "kde") { return; }
+         if current_outputs == self.outputs {
+             return;
+         }
+@@ -557,26 +566,26 @@ impl AuraApp {
+     pub(crate) fn rotation_pool(&self) -> Vec<PathBuf> {
+         if self.config.rotation_only_favorites {
+             let favs: Vec<PathBuf> = self.videos.iter()
+-                .filter(|v| self.favorites_set.contains(v.path.to_string_lossy().as_ref()))
++                .filter(|v| v.available && self.favorites_set.contains(v.path.to_string_lossy().as_ref()))
+                 .map(|v| v.path.clone())
+                 .collect();
+             if !favs.is_empty() {
+                 return favs;
+             }
+         }
+-        self.videos.iter().map(|v| v.path.clone()).collect()
++        self.videos.iter().filter(|v| v.available).map(|v| v.path.clone()).collect()
+     }
+ 
+     pub(crate) fn switcher_pool(&self) -> Vec<&VideoItem> {
+         if self.config.switcher_only_favorites {
+             let favs: Vec<&VideoItem> = self.videos.iter()
+-                .filter(|v| self.favorites_set.contains(v.path.to_string_lossy().as_ref()))
++                .filter(|v| v.available && self.favorites_set.contains(v.path.to_string_lossy().as_ref()))
+                 .collect();
+             if !favs.is_empty() {
+                 return favs;
+             }
+         }
+-        self.videos.iter().collect()
++        self.videos.iter().filter(|v| v.available).collect()
+     }
+ 
+     pub(crate) fn prewarm_switcher_around(&self, curr_idx: usize) {
+@@ -619,7 +628,7 @@ impl cosmic::Application for AuraApp {
+     type Executor = cosmic::executor::Default;
+     type Flags = AuraFlags;
+     type Message = Message;
+-    const APP_ID: &'static str = "io.github.antwny.aura";
++    const APP_ID: &'static str = if cfg!(feature = "kde") { "local.aura.kde.lab" } else { "io.github.antwny.aura" };
+ 
+     fn core(&self) -> &Core {
+         &self.core
+@@ -630,7 +639,18 @@ impl cosmic::Application for AuraApp {
+     }
+ 
+     fn init(mut core: Core, flags: Self::Flags) -> (Self, Task<cosmic::Action<Self::Message>>) {
+-        let config = Config::load();
++        let mut config = Config::load();
++        if cfg!(feature = "kde") {
++            config.auto_theme = false;
++            config.theme_mode = crate::config::ThemeMode::Manual;
++            config.auto_pause = false;
++            config.smart_pause = false;
++            config.pause_on_battery = false;
++            config.autostart = false;
++            config.rotation = false;
++            config.output = "*".into();
++            config.wallpapers.clear(); // Plasma owns persistence; never reapply on launch.
++        }
+         let language = crate::i18n::Language::from_code(&config.language);
+         let nav = Self::build_nav(language, Page::Library);
+ 
+@@ -712,7 +732,7 @@ impl cosmic::Application for AuraApp {
+ 
+         let mut engine = WallpaperEngine::new();
+         let has_initial_action = flags.action.is_some();
+-        if !has_initial_action {
++        if !has_initial_action && !cfg!(feature = "kde") {
+             for (out, path) in &config.wallpapers {
+                 let sc = config.scaling.get(out).cloned().unwrap_or_else(|| "fit".into());
+                 if std::path::Path::new(path).exists() {
+@@ -756,6 +776,10 @@ impl cosmic::Application for AuraApp {
+         let favorites_set: std::collections::HashSet<String> = config.favorites.iter().cloned().collect();
+ 
+         let mut app = Self {
++            #[cfg(feature = "kde")]
++            kde_busy: false,
++            #[cfg(feature = "kde")]
++            kde_record: None,
+             core,
+             nav,
+             active_page: Page::Library,
+@@ -1064,7 +1088,71 @@ impl cosmic::Application for AuraApp {
+     }
+ 
+     fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
++        #[cfg(feature = "kde")]
++        {
++            match &message {
++                Message::ApplyWallpaper { video_path, .. } => {
++                    if self.kde_busy { return self.notify("Hay un cambio en curso; espera a que termine."); }
++                    self.kde_busy = true;
++                    let path = video_path.clone();
++                    return Task::perform(async move {
++                        let p = path.clone();
++                        let result = tokio::task::spawn_blocking(move || crate::engine::kde::call("select", Some(&p))).await
++                            .unwrap_or_else(|e| Err(e.to_string()));
++                        (path, result)
++                    }, |(path, result)| cosmic::Action::App(Message::KdeApplied(path, result)));
++                }
++                Message::OpenWallpapersFolder => {
++                    let folder = self.config.current.as_ref().and_then(|p| PathBuf::from(p).parent().map(|p| p.to_path_buf()))
++                        .unwrap_or_else(|| PathBuf::from(std::env::var("HOME").unwrap_or_default()).join(".local/share/Steam/steamapps/workshop/content/431960"));
++                    let _ = open::that(folder);
++                    return Task::none();
++                }
++                Message::KdeRestore => {
++                    if self.kde_busy { return Task::none(); }
++                    if let Some(record) = self.kde_record.clone() {
++                        self.kde_busy = true;
++                        return Task::perform(async move {
++                            tokio::task::spawn_blocking(move || crate::engine::kde::call("restore", Some(&record))).await
++                                .unwrap_or_else(|e| Err(e.to_string()))
++                        }, |result| cosmic::Action::App(Message::KdeApplied(PathBuf::new(), result)));
++                    }
++                    return self.notify("No hay un cambio de esta sesión para deshacer.");
++                }
++                Message::KdeApplied(path, result) => {
++                    self.kde_busy = false;
++                    let text = match result { Ok(s) | Err(s) => s };
++                    for line in text.lines() {
++                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(line) {
++                            if let Some(record) = value["record"].as_str() { self.kde_record = Some(PathBuf::from(record)); }
++                        }
++                    }
++                    if let Err(e) = result { return self.notify(format!("No se completó el cambio: {e}")); }
++                    if path.as_os_str().is_empty() {
++                        self.config.current = None;
++                        self.config.wallpapers.clear();
++                        return self.notify("Selección anterior restaurada en ambas pantallas. Comprueba la reproducción.");
++                    }
++                    self.config.current = Some(path.to_string_lossy().into_owned());
++                    self.config.wallpapers.insert("*".into(), path.to_string_lossy().into_owned());
++                    let _ = self.config.save();
++                    return self.notify("Fondo enviado a ambas pantallas.");
++                }
++                Message::TogglePause | Message::SwitcherTogglePause | Message::StopWallpaper(_)
++                | Message::ToggleMute(_) | Message::ChangeVolume(_) | Message::SelectScaling { .. }
++                | Message::ToggleAutostart(_) | Message::ToggleAutoTheme(_) | Message::ToggleAutoDark(_)
++                | Message::SelectThemeMode(_) | Message::ToggleSmartPause(_) | Message::ToggleAutoPause(_)
++                | Message::TogglePauseOnBattery(_) | Message::ToggleRotation(_) | Message::StartFavoritesRotation
++                | Message::DeleteWallpaper(_) | Message::DeleteDownloadedWallpaper(_)
++                | Message::PerformGuiUpdate { .. } => return self.notify("Esta función no está habilitada en Aura KDE."),
++                Message::CheckForUpdates { .. } | Message::SmartPauseTick | Message::BatteryTick
++                | Message::GameModeChanged(_) | Message::BatteryStateChanged(_) => return Task::none(),
++                _ => {}
++            }
++        }
+         match message {
++            #[cfg(feature = "kde")]
++            Message::KdeApplied(..) | Message::KdeRestore => return Task::none(),
+             Message::SelectPage(id) => {
+                 self.nav.activate(id);
+                 if let Some(&page) = self.nav.active_data::<Page>() {
+@@ -3427,7 +3515,7 @@ impl cosmic::Application for AuraApp {
+         let content: Element<_> = match self.active_page {
+             Page::Library => self.view_library(),
+             Page::Explore => self.view_explore(),
+-            Page::Monitors => self.view_monitors(),
++            Page::Monitors => if cfg!(feature = "kde") { widget::text::body("Cada selección se aplica a ambas pantallas de la actividad actual.").into() } else { self.view_monitors() },
+             Page::Settings => self.view_settings(),
+             Page::About => self.view_about(),
+         };
+diff --git a/src/config.rs b/src/config.rs
+index 66201b8..c66db6d 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -243,11 +243,11 @@ impl Config {
+     pub fn config_dir() -> PathBuf {
+         if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME") {
+             if !xdg.is_empty() {
+-                return PathBuf::from(xdg).join("aura");
++                return PathBuf::from(xdg).join(if cfg!(feature = "kde") { "aura-kde-lab" } else { "aura" });
+             }
+         }
+         let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+-        PathBuf::from(home).join(".config").join("aura")
++        PathBuf::from(home).join(".config").join(if cfg!(feature = "kde") { "aura-kde-lab" } else { "aura" })
+     }
+ 
+     pub fn config_file() -> PathBuf {
+diff --git a/src/engine/mod.rs b/src/engine/mod.rs
+index a6e9d72..e6b5cd1 100644
+--- a/src/engine/mod.rs
++++ b/src/engine/mod.rs
+@@ -1,8 +1,14 @@
+ pub mod gpu;
++#[cfg(not(feature = "kde"))]
+ pub mod mpvpaper;
++#[cfg(feature = "kde")]
++pub mod kde;
+ pub mod outputs;
+ 
+ #[allow(unused_imports)]
+ pub use gpu::{detect_available_gpus, GpuInfo};
++#[cfg(not(feature = "kde"))]
+ pub use mpvpaper::WallpaperEngine;
++#[cfg(feature = "kde")]
++pub use kde::WallpaperEngine;
+ pub use outputs::{detect_outputs, MonitorOutput};
+diff --git a/src/engine/outputs.rs b/src/engine/outputs.rs
+index cd43d95..19f7ef8 100644
+--- a/src/engine/outputs.rs
++++ b/src/engine/outputs.rs
+@@ -21,6 +21,7 @@ impl MonitorOutput {
+     }
+ }
+ 
++#[cfg(not(feature = "kde"))]
+ pub fn detect_outputs() -> Vec<MonitorOutput> {
+     let mut outputs = Vec::new();
+ 
+@@ -288,3 +289,6 @@ mod tests {
+         assert_eq!(added[1].name, "DP-2");
+     }
+ }
++
++#[cfg(feature = "kde")]
++pub fn detect_outputs() -> Vec<MonitorOutput> { Vec::new() }
+diff --git a/src/i18n.rs b/src/i18n.rs
+index 4aa01c8..dceaa5a 100644
+--- a/src/i18n.rs
++++ b/src/i18n.rs
+@@ -594,7 +594,10 @@ impl Language {
+     }
+ 
+     pub fn about_version_info(&self) -> String {
++        #[cfg(not(feature = "kde"))]
+         let os = crate::engine::mpvpaper::detect_os_pretty_name();
++        #[cfg(feature = "kde")]
++        let os = "KDE Plasma".to_string();
+         match self {
+             Language::Es => format!("Versión {} • {} • COSMIC Desktop", env!("CARGO_PKG_VERSION"), os),
+             Language::En => format!("Version {} • {} • COSMIC Desktop", env!("CARGO_PKG_VERSION"), os),
+diff --git a/src/main.rs b/src/main.rs
+index f09380f..b417ebc 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -1,4 +1,8 @@
+ mod app;
++#[cfg(not(feature = "kde"))]
++mod cli;
++#[cfg(feature = "kde")]
++#[path = "kde_cli.rs"]
+ mod cli;
+ mod config;
+ mod engine;
+diff --git a/src/online/cache.rs b/src/online/cache.rs
+index 03dbcfc..c1c5920 100644
+--- a/src/online/cache.rs
++++ b/src/online/cache.rs
+@@ -54,6 +54,7 @@ pub fn user_pictures_dir() -> PathBuf {
+ }
+ 
+ pub fn wallpapers_online_dir() -> PathBuf {
++    if cfg!(feature = "kde") { return crate::config::Config::config_dir().join("wallpapers_online_dir"); }
+     static CACHED: OnceLock<PathBuf> = OnceLock::new();
+     CACHED.get_or_init(|| {
+         let pics = user_pictures_dir();
+@@ -95,6 +96,7 @@ pub fn wallpapers_online_dir() -> PathBuf {
+ }
+ 
+ pub fn thumbs_online_cache_dir() -> PathBuf {
++    if cfg!(feature = "kde") { return crate::config::Config::config_dir().join("thumbs_online_cache_dir"); }
+     static CACHED: OnceLock<PathBuf> = OnceLock::new();
+     CACHED.get_or_init(|| {
+         let base = if let Some(xdg) = std::env::var_os("XDG_CACHE_HOME") {
+diff --git a/src/online/models.rs b/src/online/models.rs
+index 4682a06..b63936a 100644
+--- a/src/online/models.rs
++++ b/src/online/models.rs
+@@ -63,6 +63,9 @@ impl OnlineWallpaperItem {
+     }
+ 
+     pub fn wallpaper_filename(&self) -> String {
++        if cfg!(feature = "kde") && self.source != OnlineSource::MotionBGS {
++            return clean_filename(self.source_prefix(), &self.id, self.extension());
++        }
+         match self.source {
+             OnlineSource::MotionBGS => {
+                 let clean = clean_title_filename(&self.title);
+diff --git a/src/scanner/mod.rs b/src/scanner/mod.rs
+index 50d7086..29f004b 100644
+--- a/src/scanner/mod.rs
++++ b/src/scanner/mod.rs
+@@ -13,6 +13,7 @@ pub fn is_supported_wallpaper_ext(ext: &str) -> bool {
+ 
+ #[derive(Debug, Clone, PartialEq, Eq)]
+ pub struct VideoItem {
++    pub available: bool,
+     pub path: PathBuf,
+     pub name: String,
+     pub name_lower: String,
+@@ -42,6 +43,7 @@ impl VideoItem {
+         let is_downloaded = path.starts_with(&online_dir);
+         let name_lower = name.to_lowercase();
+         Self {
++            available: true,
+             path,
+             name,
+             name_lower,
+@@ -109,6 +111,7 @@ fn resolve_or_link_thumb(path: &Path) -> Option<PathBuf> {
+     None
+ }
+ 
++#[cfg(not(feature = "kde"))]
+ pub fn scan_directories(dirs: &[String], extra_files: &[String]) -> Vec<VideoItem> {
+     let mut items = Vec::new();
+     let mut seen_paths = std::collections::HashSet::new();
+@@ -355,3 +358,8 @@ mod tests {
+     }
+ }
+ 
++
++#[cfg(feature = "kde")]
++pub fn scan_directories(_dirs: &[String], _files: &[String]) -> Vec<VideoItem> {
++    crate::engine::kde::catalog().unwrap_or_else(|e| { eprintln!("KDE catalog: {e}"); Vec::new() })
++}
+diff --git a/src/scanner/thumbs.rs b/src/scanner/thumbs.rs
+index 0d0c76f..c2f1c4b 100644
+--- a/src/scanner/thumbs.rs
++++ b/src/scanner/thumbs.rs
+@@ -13,7 +13,7 @@ pub fn get_cache_dir() -> PathBuf {
+         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+         PathBuf::from(home).join(".cache")
+     };
+-    base.join("aura/thumbs")
++    base.join(if cfg!(feature = "kde") { "aura-kde-lab/thumbs" } else { "aura/thumbs" })
+ }
+ 
+ pub fn get_scaled_cache_dir() -> PathBuf {
+@@ -28,7 +28,7 @@ pub fn get_scaled_cache_dir() -> PathBuf {
+         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+         PathBuf::from(home).join(".cache")
+     };
+-    base.join("aura/scaled")
++    base.join(if cfg!(feature = "kde") { "aura-kde-lab/scaled" } else { "aura/scaled" })
+ }
+ 
+ pub fn get_cinematic_cache_dir() -> PathBuf {
+@@ -43,7 +43,7 @@ pub fn get_cinematic_cache_dir() -> PathBuf {
+         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+         PathBuf::from(home).join(".cache")
+     };
+-    base.join("aura/cinematic_v2")
++    base.join(if cfg!(feature = "kde") { "aura-kde-lab/cinematic_v2" } else { "aura/cinematic_v2" })
+ }
+ 
+ pub fn get_honeycomb_cache_dir() -> PathBuf {
+@@ -58,7 +58,7 @@ pub fn get_honeycomb_cache_dir() -> PathBuf {
+         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+         PathBuf::from(home).join(".cache")
+     };
+-    base.join("aura/honeycomb_v2")
++    base.join(if cfg!(feature = "kde") { "aura-kde-lab/honeycomb_v2" } else { "aura/honeycomb_v2" })
+ }
+ 
+ use std::collections::{HashMap, HashSet, VecDeque};
+@@ -671,6 +671,21 @@ pub fn optimize_wallpaper_image(image_path: &Path, max_w: u32, max_h: u32) -> Pa
+ }
+ 
+ pub fn thumb_path_for_video(video_path: &Path) -> PathBuf {
++    #[cfg(feature = "kde")]
++    if video_path.file_name().is_some_and(|s| s == "project.json") {
++        if let Some(parent) = video_path.parent() {
++            if let Ok(raw) = std::fs::read_to_string(video_path) {
++                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&raw) {
++                    if let Some(preview) = value["preview"].as_str() {
++                        if let (Ok(root), Ok(candidate)) = (parent.canonicalize(), parent.join(preview).canonicalize()) {
++                            if candidate.starts_with(root) { return candidate; }
++                        }
++                    }
++                }
++            }
++        }
++    }
++
+     let cache_dir = get_cache_dir();
+     let file_stem = video_path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| "video".into());
+     // Sanitize name and add hash based on full path to avoid collision
+@@ -803,6 +818,11 @@ mod tests {
+ static THUMB_SEMAPHORE: std::sync::OnceLock<tokio::sync::Semaphore> = std::sync::OnceLock::new();
+ 
+ pub async fn generate_thumbnail(media_path: &Path) -> Option<PathBuf> {
++    if cfg!(feature = "kde") && media_path.file_name().is_some_and(|s| s == "project.json") {
++        let preview = thumb_path_for_video(media_path);
++        return preview.is_file().then_some(preview);
++    }
++
+     let thumb_path = thumb_path_for_video(media_path);
+     if thumb_path.exists() {
+         return Some(thumb_path);
+diff --git a/src/theme/palette.rs b/src/theme/palette.rs
+index b152bb9..71a6dc1 100644
+--- a/src/theme/palette.rs
++++ b/src/theme/palette.rs
+@@ -117,6 +117,7 @@ fn atomic_write(path: &Path, content: &str) {
+ }
+ 
+ pub fn apply_cosmic_mode(is_dark: bool) {
++    if cfg!(feature = "kde") { return; }
+     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+     let cosmic_config = PathBuf::from(home).join(".config").join("cosmic");
+     let mode_dir = cosmic_config.join("com.system76.CosmicTheme.Mode").join("v1");
+@@ -124,6 +125,7 @@ pub fn apply_cosmic_mode(is_dark: bool) {
+ }
+ 
+ pub fn apply_cosmic_theme(thumb_path: &Path, auto_theme: bool, theme_mode: crate::config::ThemeMode) -> bool {
++    if cfg!(feature = "kde") { return false; }
+     if !auto_theme && theme_mode == crate::config::ThemeMode::Manual {
+         return false;
+     }
+diff --git a/src/ui/bar.rs b/src/ui/bar.rs
+index 6017374..85f2a08 100644
+--- a/src/ui/bar.rs
++++ b/src/ui/bar.rs
+@@ -6,6 +6,13 @@ use cosmic::Element;
+ 
+ impl AuraApp {
+     pub(crate) fn view_now_playing_bar(&self) -> Element<'_, Message> {
++        #[cfg(feature = "kde")]
++        return widget::row::with_capacity(3).spacing(12)
++            .push(widget::text::body(if self.kde_busy { "Aplicando…" } else { "Destino: ambas pantallas" }))
++            .push(widget::button::standard("Selector").on_press(Message::OpenQuickSwitcher))
++            .push(widget::button::standard("Restaurar anterior").on_press_maybe(if self.kde_record.is_some() && !self.kde_busy { Some(Message::KdeRestore) } else { None }))
++            .into();
++
+         let has_wallpapers = !self.config.wallpapers.is_empty();
+ 
+         let (wall_title, out_label) = if let Some(curr) = &self.config.current {
+diff --git a/src/ui/library.rs b/src/ui/library.rs
+index 4ba2585..6bb10b0 100644
+--- a/src/ui/library.rs
++++ b/src/ui/library.rs
+@@ -6,6 +6,12 @@ use cosmic::Element;
+ 
+ impl AuraApp {
+     pub(crate) fn view_library(&self) -> Element<'_, Message> {
++        if cfg!(feature = "kde") && self.videos.is_empty() {
++            return widget::column::with_capacity(2).spacing(12)
++                .push(widget::text::body("No hay fondos Workshop disponibles. Comprueba tus bibliotecas de Steam y actualiza la lista."))
++                .push(widget::button::standard("Actualizar biblioteca").on_press(Message::RefreshLibrary)).into();
++        }
++
+         let search_input = widget::text_input::search_input(self.language.library_search_placeholder(), &self.search_query)
+             .on_input(Message::SearchChanged)
+             .width(Length::Fill);
+@@ -316,11 +322,11 @@ impl AuraApp {
+                         let mut img_btn = widget::button::image(thumb.clone())
+                             .width(240.0)
+                             .selected(is_active);
+-                        if !is_active {
+-                            img_btn = img_btn.on_press(Message::ApplyWallpaper {
++                        if !is_active && video.available {
++                            img_btn = img_btn.on_press_maybe(video.available.then_some(Message::ApplyWallpaper {
+                                 video_path: video.path.clone(),
+                                 output: selected_output.clone(),
+-                            });
++                            }));
+                         }
+                         card_content = card_content.push(img_btn);
+                     } else {
+@@ -342,10 +348,10 @@ impl AuraApp {
+                     } else {
+                         widget::button::standard(self.language.library_apply())
+                             .leading_icon(widget::icon::from_name("view-fullscreen-symbolic"))
+-                            .on_press(Message::ApplyWallpaper {
++                            .on_press_maybe(video.available.then_some(Message::ApplyWallpaper {
+                                 video_path: video.path.clone(),
+                                 output: selected_output.clone(),
+-                            })
++                            }))
+                     };
+ 
+                     let is_fav = favorites_set.contains(path_str.as_str());
+diff --git a/src/ui/settings.rs b/src/ui/settings.rs
+index ff97aa4..e86c286 100644
+--- a/src/ui/settings.rs
++++ b/src/ui/settings.rs
+@@ -5,6 +5,15 @@ use cosmic::Element;
+ 
+ impl AuraApp {
+     pub(crate) fn view_settings(&self) -> Element<'_, Message> {
++        #[cfg(feature = "kde")]
++        return widget::column::with_capacity(5).spacing(12)
++            .push(widget::text::body("Aura KDE · Wallpaper Engine · Ambas pantallas"))
++            .push(widget::text::body("Colores y controles de reproducción aún no disponibles. Configúralos desde el complemento de KDE."))
++            .push(widget::button::standard("Selector clásico").on_press(Message::SelectSwitcherStyle(crate::config::SwitcherStyle::Classic)))
++            .push(widget::button::standard("Selector Honeycomb").on_press(Message::SelectSwitcherStyle(crate::config::SwitcherStyle::Honeycomb)))
++            .push(widget::button::standard("Selector cinematográfico").on_press(Message::SelectSwitcherStyle(crate::config::SwitcherStyle::Cinematic)))
++            .into();
++
+         let mut col = widget::column::with_capacity(7)
+             .spacing(18)
+             .width(Length::Fill);
