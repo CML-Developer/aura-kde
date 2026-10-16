@@ -105,16 +105,16 @@ O busca **Aura KDE Lab** en el lanzador de aplicaciones.
 
 #### Configurar atajo de teclado
 
-Para abrir el selector de wallpapers con un atajo de teclado:
+Para abrir el **selector hexagonal** de wallpapers con un atajo de teclado:
 
 1. Abre **Preferencias del sistema → Atajos de teclado → Atajos personalizados**
 2. Haz clic en **Editar → Nueva → Comando global de acceso directo**
-3. Dale un nombre (ej. "Abrir Aura")
+3. Dale un nombre (ej. "Selector de Wallpapers")
 4. En la pestaña **Disparador**, configura tu atajo (ej. `Meta+W`)
-5. En la pestaña **Acción**, escribe: `aura-kde-lab`
+5. En la pestaña **Acción**, escribe: `aura-kde-lab switcher`
 6. Haz clic en **Aplicar**
 
-Ahora puedes abrir Aura con tu atajo personalizado.
+Ahora el atajo abre directamente el selector hexagonal sin abrir la ventana principal.
 
 ---
 
@@ -182,6 +182,10 @@ Los ajustes y registros de operaciones en `~/.local/state/aura-kde-lab/` se cons
 `aura-kde` se integra con Guardian **automáticamente si está instalado**: los fondos en la lista negra se ocultan de la biblioteca sin configuración adicional. La lista negra solo se lee, nunca se escribe.
 
 Guardian es completamente opcional. Sin él, la biblioteca muestra todos los fondos.
+
+**Obtener Guardian:**
+- 📦 Repositorio: [guardian-wallpaper-engine](https://github.com/CML-Developer/guardian-wallpaper-engine)
+- 📖 Incluye instalación, configuración y servicio systemd
 
 > ⚠️ Guardian no forma parte de este proyecto. Instálalo, configúralo y adminístralo por separado.
 
@@ -340,16 +344,16 @@ Or launch **Aura KDE Lab** from your application menu.
 
 #### Configure keyboard shortcut
 
-To open the wallpaper selector with a keyboard shortcut:
+To open the **hexagonal selector** (honeycomb) with a keyboard shortcut:
 
 1. Open **System Settings → Keyboard → Shortcuts → Custom Shortcuts**
 2. Click **Edit → New → Global Shortcut → Command/URL**
-3. Give it a name (e.g., "Open Aura")
+3. Give it a name (e.g., "Wallpaper Selector")
 4. In the **Trigger** tab, set your shortcut (e.g., `Meta+W`)
-5. In the **Action** tab, enter: `aura-kde-lab`
+5. In the **Action** tab, enter: `aura-kde-lab switcher`
 6. Click **Apply**
 
-Now you can open Aura with your custom shortcut.
+Now the shortcut opens the hexagonal selector directly without opening the main window.
 
 ---
 
@@ -417,6 +421,10 @@ Settings and operation records in `~/.local/state/aura-kde-lab/` are preserved.
 `aura-kde` integrates with Guardian **automatically if it is installed**: wallpapers listed in the blacklist are hidden from the library without any extra configuration. The blacklist is read on every catalog load and is **never written** by this adapter.
 
 Guardian is entirely optional. If it is not installed, the library shows all wallpapers.
+
+**Get Guardian:**
+- 📦 Repository: [guardian-wallpaper-engine](https://github.com/CML-Developer/guardian-wallpaper-engine)
+- 📖 Includes installation, configuration, and systemd service
 
 > ⚠️ Guardian is not part of this project. Install, configure, and manage it separately.
 
