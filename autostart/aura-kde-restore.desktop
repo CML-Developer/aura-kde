@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Aura KDE Wallpaper Restore
+Comment=Apply last selected wallpaper using aura-kde-lab CLI
+Exec=/home/camilo/.local/bin/aura-kde-restore-on-login
+X-KDE-autostart-after=panel
+X-KDE-autostart-phase=2
+Hidden=false
+NoDisplay=false

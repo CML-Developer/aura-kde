@@ -1,0 +1,31 @@
+#!/bin/bash
+# Force restore last wallpaper ignoring current state
+
+OPERATIONS_DIR="$HOME/.local/state/aura-kde-lab/operations"
+LOG_FILE="$HOME/.local/state/aura-kde-lab/autostart.log"
+FORCE_RESTORE="$HOME/.local/lib/aura-kde-lab/tools/aura_kde_force_restore.py"
+
+# Wait for Plasma to fully initialize
+sleep 3
+
+# Find most recent operation
+LATEST_OP=$(ls -t "$OPERATIONS_DIR"/*.json 2>/dev/null | head -1)
+
+if [ -z "$LATEST_OP" ]; then
+    echo "$(date): No operations found" >> "$LOG_FILE"
+    exit 0
+fi
+
+WALLPAPER_ID=$(jq -r '.selection.id' "$LATEST_OP")
+WALLPAPER_TITLE=$(jq -r '.selection.title' "$LATEST_OP")
+
+echo "$(date): Force restoring $WALLPAPER_ID - $WALLPAPER_TITLE" >> "$LOG_FILE"
+
+# Use force restore (no state validation)
+python3 "$FORCE_RESTORE" "$LATEST_OP" >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    echo "$(date): ✓ Force restore successful" >> "$LOG_FILE"
+else
+    echo "$(date): ✗ Force restore failed" >> "$LOG_FILE"
+fi

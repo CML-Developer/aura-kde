@@ -42,10 +42,15 @@ def package(prefix, binary_path):
         'aura_kde_v2.py', 'plasma_snapshot_v2.js', 'plasma_transaction_v2.js',
         'aura_kde_store.py', 'aura_kde_bridge.py', 'aura_kde_apply.py',
         'aura_kde_catalog.py', 'aura_kde_snapshot.py', 'aura_kde_theme.py',
-        'plasma_snapshot.js', 'plasma_transaction.js',
+        'plasma_snapshot.js', 'plasma_transaction.js', 'aura_kde_force_restore.py',
     ]
     for name in tool_names:
         files['lib/aura-kde-lab/tools/' + name] = ((ROOT / 'tools' / name).read_bytes(), 0o644)
+    # Autostart files for wallpaper restoration on login
+    autostart_script = (ROOT / 'autostart' / 'aura-kde-restore-on-login').read_bytes()
+    autostart_desktop = (ROOT / 'autostart' / 'aura-kde-restore.desktop').read_bytes()
+    files['bin/aura-kde-restore-on-login'] = (autostart_script, 0o755)
+    files['../../../.config/autostart/aura-kde-restore.desktop'] = (autostart_desktop, 0o644)
     icon_path = ROOT / 'assets' / 'io.github.antwny.aura.svg'
     if icon_path.exists():
         icon_data = icon_path.read_bytes()
