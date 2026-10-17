@@ -247,6 +247,7 @@ Este proyecto modifica [Aura v1.6.1](https://github.com/antwny/aura) (commit c41
 **Archivos añadidos o modificados:**
 - `src/engine/kde.rs` — stub + bridge caller
 - `src/kde_cli.rs` — CLI entry point
+- **Archivos de Aura modificados por el parche:** `Cargo.toml`, `src/app.rs`, `src/config.rs`, `src/engine/mod.rs`, `src/engine/outputs.rs`, `src/i18n.rs`, `src/main.rs`, `src/online/cache.rs`, `src/online/models.rs`, `src/scanner/mod.rs`, `src/scanner/thumbs.rs`, `src/theme/palette.rs`, `src/ui/bar.rs`, `src/ui/library.rs`, `src/ui/settings.rs`
 - Ver `patches/aura-kde.patch` para diff completo
 
 ---
@@ -561,6 +562,7 @@ This project modifies [Aura v1.6.1](https://github.com/antwny/aura) (commit c41a
 **Added or modified files:**
 - `src/engine/kde.rs` — stub + bridge caller
 - `src/kde_cli.rs` — CLI entry point
+- **Aura files modified by the patch:** `Cargo.toml`, `src/app.rs`, `src/config.rs`, `src/engine/mod.rs`, `src/engine/outputs.rs`, `src/i18n.rs`, `src/main.rs`, `src/online/cache.rs`, `src/online/models.rs`, `src/scanner/mod.rs`, `src/scanner/thumbs.rs`, `src/theme/palette.rs`, `src/ui/bar.rs`, `src/ui/library.rs`, `src/ui/settings.rs`
 - See `patches/aura-kde.patch` for complete diff
 
 ---
